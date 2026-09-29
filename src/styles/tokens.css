@@ -1,0 +1,42 @@
+/**
+ * Tokens da identidade Tamanda League 3X3.
+ * Tema escuro único — a marca não tem versão clara.
+ */
+:root {
+  /* Fundos */
+  --background: #090d0c;
+  --surface: #111716;
+  --surface-elevated: #181e1c;
+  --border: #303634;
+
+  /* Verde Tamanda */
+  --green: #16c956;
+  --green-muted: #16703a;
+  --green-dark: #0b3d27;
+
+  /* Laranja Tamanda */
+  --orange: #ff7417;
+  --orange-muted: #b95118;
+  --orange-dark: #703414;
+
+  /* Tipografia */
+  --foreground: #f2f2ef;
+  --muted-foreground: #a9adaa;
+
+  /* Raios */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  /* Brilhos das cores da marca */
+  --glow-green: 0 0 24px rgba(22, 201, 86, 0.25);
+  --glow-orange: 0 0 24px rgba(255, 116, 23, 0.25);
+
+  /* Camadas */
+  --z-bottom-nav: 40;
+  --z-header: 30;
+  --z-modal: 60;
+
+  /* Métricas de layout */
+  --bottom-nav-height: 64px;
+}

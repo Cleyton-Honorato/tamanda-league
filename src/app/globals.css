@@ -1,26 +1,251 @@
 @import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@import "../styles/tokens.css";
 
 @theme inline {
+  /* Superfícies */
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-elevated: var(--surface-elevated);
+  --color-border: var(--border);
+
+  /* Verde da marca */
+  --color-primary: var(--green);
+  --color-primary-muted: var(--green-muted);
+  --color-primary-dark: var(--green-dark);
+
+  /* Laranja da marca */
+  --color-accent: var(--orange);
+  --color-accent-muted: var(--orange-muted);
+  --color-accent-dark: var(--orange-dark);
+
+  /* Texto */
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-muted-foreground: var(--muted-foreground);
+
+  /* Tipografia */
+  --font-display: var(--font-bebas);
+  --font-sans: var(--font-barlow);
+
+  /* Raios */
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-barlow), system-ui, sans-serif;
+  }
+
+  /* O display da marca é sempre caixa alta e apertado, como nos pôsteres. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-bebas), var(--font-barlow), sans-serif;
+    letter-spacing: 0.02em;
+  }
+
+  ::selection {
+    background-color: var(--green);
+    color: var(--background);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .admin-shell {
+    background: radial-gradient(ellipse at 90% 0%, #16c95606, transparent 50%), var(--background);
+  }
+
+  .admin-sidebar-signature {
+    background-image: repeating-linear-gradient(135deg, transparent 0 18px, #16c95606 18px 20px, transparent 20px 30px);
+  }
+
+  .admin-overview-banner {
+    background: linear-gradient(110deg, #0b281a, #101b16 55%, #21170f);
+  }
+
+  .featured-match {
+    background: #050907;
+  }
+
+  .featured-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .featured-backdrop__veil {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      var(--background),
+      transparent 16%,
+      transparent 84%,
+      var(--background)
+    );
+  }
+
+  /**
+   * Hero da home. A arte oficial é o próprio fundo da seção: uma máscara
+   * radial dissolve suas bordas no preto da página, para que não sobre
+   * nenhuma silhueta de "card" flutuando.
+   */
+  .hero-art {
+    --hero-shift: 0px;
+    transform: translate3d(0, var(--hero-shift), 0) scale(1.08);
+    will-change: transform;
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      #000 42%,
+      rgba(0, 0, 0, 0.45) 72%,
+      transparent 96%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      #000 42%,
+      rgba(0, 0, 0, 0.45) 72%,
+      transparent 96%
+    );
+  }
+
+  @media (min-width: 1024px) {
+    /**
+     * No desktop a elipse é deslocada para a direita: dissolve o topo, a base
+     * e o lado do texto, mas segue opaca até a borda direita da tela, que é
+     * por onde a arte sangra.
+     */
+    .hero-art {
+      -webkit-mask-image: radial-gradient(
+        72% 72% at 66% 50%,
+        #000 36%,
+        rgba(0, 0, 0, 0.45) 64%,
+        transparent 90%
+      );
+      mask-image: radial-gradient(
+        72% 72% at 66% 50%,
+        #000 36%,
+        rgba(0, 0, 0, 0.45) 64%,
+        transparent 90%
+      );
+    }
+
+    /* Mantém a logo inteira, com escala limitada pelo tamanho da arte. */
+    .hero-art--wide {
+      -webkit-mask-image: linear-gradient(
+        to right,
+        transparent 0%,
+        rgba(0, 0, 0, 0.55) 13%,
+        #000 28%
+      );
+      mask-image: linear-gradient(
+        to right,
+        transparent 0%,
+        rgba(0, 0, 0, 0.55) 13%,
+        #000 28%
+      );
+      transform: translate3d(0, var(--hero-shift), 0);
+    }
+
+    .hero-art--wide img {
+      /* Dissolve as bordas horizontais da arte reduzida. */
+      mask-image: linear-gradient(to bottom, transparent, black 8%, black 88%, transparent);
+    }
+  }
+
+  .hero-divider {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, #16c95666 28%, #a9adaa55 50%, #ff741766 72%, transparent);
+    box-shadow: 0 -8px 28px 5px #00000060;
+  }
+
+  .hero-divider::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -3px;
+    width: 7px;
+    height: 7px;
+    background: var(--green-muted);
+    border: 1px solid var(--orange-muted);
+    transform: translateX(-50%) rotate(45deg);
+  }
+
+  .hero-rise {
+    animation: hero-rise 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes hero-rise {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 22px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-rise {
+      animation: none;
+    }
+
+    .hero-art {
+      transform: none;
+    }
+  }
+}
+
+@layer utilities {
+  /* Fundo dos destaques: brilhos suaves nas cores da marca, um em cada canto. */
+  .bg-court-glow {
+    background-image:
+      radial-gradient(
+        42rem 42rem at 12% -10%,
+        rgba(22, 201, 86, 0.13),
+        transparent 60%
+      ),
+      radial-gradient(
+        38rem 38rem at 95% 115%,
+        rgba(255, 116, 23, 0.11),
+        transparent 60%
+      );
+  }
+
+  .text-glow-green {
+    text-shadow: 0 0 18px rgba(22, 201, 86, 0.45);
+  }
+
+  .text-glow-orange {
+    text-shadow: 0 0 18px rgba(255, 116, 23, 0.45);
+  }
+
+  /* Esconde a barra de rolagem do chaveamento sem perder o gesto de arrastar. */
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Respiro para a bottom nav fixa não cobrir o fim da página. */
+  .pb-nav {
+    padding-bottom: calc(
+      var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 1rem
+    );
+  }
 }
