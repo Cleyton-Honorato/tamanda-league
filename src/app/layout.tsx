@@ -17,10 +17,13 @@ const barlow = Barlow({
   variable: "--font-barlow",
 });
 
+// Uma variável declarada mas vazia chega como "" e derrubaria o build em
+// `new URL("")`, por isso o valor é tratado antes de virar URL.
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL?.trim() || "http://localhost:3005";
+
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3005",
-  ),
+  metadataBase: new URL(siteUrl),
   title: {
     default: "Tamanda League 3X3",
     template: "%s · Tamanda League 3X3",
