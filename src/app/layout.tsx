@@ -19,7 +19,7 @@ const barlow = Barlow({
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3001",
+    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3005",
   ),
   title: {
     default: "Tamanda League 3X3",
