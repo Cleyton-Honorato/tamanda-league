@@ -147,3 +147,4 @@ src/
 
 O acesso ao painel é garantido por `requireAdmin()` em cada página e em cada
 action; o `src/proxy.ts` apenas evita exibir uma tela que seria negada.
+# tamanda-league
