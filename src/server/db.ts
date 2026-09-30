@@ -28,7 +28,11 @@ export async function dbConnect(): Promise<typeof mongoose> {
     throw new Error('MONGODB_URI não configurada — defina em .env.local');
   }
 
-  cache.promise ??= mongoose.connect(uri, { bufferCommands: false });
+  // A URI do Atlas pode vir sem /tamanda-league; nesse caso o driver usa "test".
+  cache.promise ??= mongoose.connect(uri, {
+    bufferCommands: false,
+    dbName: 'tamanda-league',
+  });
 
   try {
     cache.conn = await cache.promise;
