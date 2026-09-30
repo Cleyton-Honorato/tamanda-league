@@ -25,7 +25,7 @@ export async function loginAction(
     schema: loginSchema,
     input,
     handler: async (data) => {
-      await dbConnect();
+      const connection = await dbConnect();
 
       const admin = await AdminUser.findOne({
         email: data.email.toLowerCase(),
@@ -34,10 +34,24 @@ export async function loginAction(
       // Mensagem única para e-mail inexistente e senha errada: não confirma
       // quais e-mails existem.
       const invalid = new DomainError('E-mail ou senha incorretos.');
-      if (!admin) throw invalid;
+      if (!admin) {
+        console.warn('[auth] login recusado', {
+          reason: 'admin-not-found',
+          database: connection.connection.db?.databaseName,
+          host: connection.connection.host,
+        });
+        throw invalid;
+      }
 
       const matches = await verifyPassword(data.password, admin.passwordHash);
-      if (!matches) throw invalid;
+      if (!matches) {
+        console.warn('[auth] login recusado', {
+          reason: 'password-mismatch',
+          database: connection.connection.db?.databaseName,
+          host: connection.connection.host,
+        });
+        throw invalid;
+      }
 
       await createSession({
         userId: admin._id.toString(),
