@@ -59,6 +59,31 @@
 }
 
 @layer components {
+  .login-scene {
+    background-color: var(--background);
+  }
+
+  .login-backdrop-overlay {
+    background: linear-gradient(90deg, #05090755 0%, #05090744 45%, #050907aa 100%);
+  }
+
+  .login-player {
+    inset: 0;
+    filter: drop-shadow(0 20px 60px #000b);
+  }
+
+  .login-aura {
+    background: radial-gradient(ellipse 55% 45% at 50% 62%, #16c95627, #ff74170e 48%, transparent 80%);
+  }
+
+  @media (max-width: 639px) {
+    .login-backdrop-overlay {
+      background: linear-gradient(to bottom, #05090733, #05090733 25%, #0b1410 57%);
+    }
+
+    .login-player { inset: 5% 0 0; }
+  }
+
   .admin-shell {
     background: radial-gradient(ellipse at 90% 0%, #16c95606, transparent 50%), var(--background);
   }

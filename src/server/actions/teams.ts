@@ -6,7 +6,7 @@ import { teamSchema } from '@/features/admin/schemas';
 import { createTeam, deleteTeam, updateTeam } from '@/server/services/teams';
 import { PUBLIC_MATCH_PATHS } from '@/lib/constants';
 
-const REVALIDATE = [...PUBLIC_MATCH_PATHS, '/admin/times'];
+const REVALIDATE = [...PUBLIC_MATCH_PATHS, '/admin/times', '/admin/atletas', '/admin'];
 
 export async function saveTeamAction(input: unknown) {
   return adminAction({

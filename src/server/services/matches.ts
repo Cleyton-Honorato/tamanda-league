@@ -4,6 +4,7 @@ import { dbConnect } from '@/server/db';
 import { DomainError, NotFoundError } from '@/server/errors';
 import { Match, type MatchDocument } from '@/server/models/match';
 import { Team } from '@/server/models/team';
+import { Athlete } from '@/server/models/athlete';
 import { toMatchDto } from '@/server/serialization';
 import { getTeamsIndex } from '@/server/services/teams';
 import { nextPosition, stagesFrom, winnerOf } from '@/server/services/bracket';
@@ -103,6 +104,13 @@ async function assertTeamsExist(teamAId: string, teamBId: string) {
   const count = await Team.countDocuments({ _id: { $in: [teamAId, teamBId] } });
   if (count !== 2) {
     throw new DomainError('Time não encontrado.');
+  }
+  const rosters = await Athlete.aggregate<{ _id: Types.ObjectId; count: number }>([
+    { $match: { teamId: { $in: [new Types.ObjectId(teamAId), new Types.ObjectId(teamBId)] } } },
+    { $group: { _id: '$teamId', count: { $sum: 1 } } },
+  ]);
+  if (rosters.length !== 2 || rosters.some((roster) => roster.count !== 4)) {
+    throw new DomainError('Cada time precisa ter exatamente quatro atletas antes de agendar jogos.');
   }
 }
 

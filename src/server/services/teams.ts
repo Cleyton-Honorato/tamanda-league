@@ -3,6 +3,7 @@ import { dbConnect } from '@/server/db';
 import { DomainError, NotFoundError } from '@/server/errors';
 import { Match } from '@/server/models/match';
 import { Team } from '@/server/models/team';
+import { Athlete } from '@/server/models/athlete';
 import { toTeamDto, toTeamRefDto } from '@/server/serialization';
 import type { TeamDto, TeamRefDto } from '@/lib/types';
 import { destroyAsset } from '@/server/services/cloudinary';
@@ -75,7 +76,7 @@ export async function updateTeam(
 }
 
 export async function deleteTeam(id: string): Promise<void> {
-  await dbConnect();
+  const db = await dbConnect();
 
   const matches = await Match.countDocuments({
     $or: [{ teamAId: id }, { teamBId: id }],
@@ -86,10 +87,20 @@ export async function deleteTeam(id: string): Promise<void> {
     );
   }
 
-  const team = await Team.findByIdAndDelete(id);
-  if (!team) throw new NotFoundError('Time não encontrado.');
+  const session = await db.startSession();
+  let crestPublicId: string | null = null;
+  try {
+    await session.withTransaction(async () => {
+      const team = await Team.findByIdAndDelete(id).session(session);
+      if (!team) throw new NotFoundError('Time não encontrado.');
+      crestPublicId = team.crestPublicId;
+      await Athlete.updateMany({ teamId: id }, { $set: { teamId: null } }).session(session);
+    });
+  } finally {
+    await session.endSession();
+  }
 
-  if (team.crestPublicId) {
-    await destroyAsset(team.crestPublicId, 'image').catch(() => undefined);
+  if (crestPublicId) {
+    await destroyAsset(crestPublicId, 'image').catch(() => undefined);
   }
 }
