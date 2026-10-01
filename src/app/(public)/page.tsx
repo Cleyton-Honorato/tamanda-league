@@ -1,18 +1,17 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import Link from 'next/link';
-import Image from 'next/image';
 import { Container } from '@/components/layout/Container';
 import { Hero } from '@/features/public/components/Hero';
 import { SectionTitle } from '@/components/brand/SectionTitle';
-import { EmptyState } from '@/components/ui/EmptyState';
 import { MatchCard } from '@/features/public/components/MatchCard';
 import { FeaturedMatch } from '@/features/public/components/FeaturedMatch';
+import { Gallery } from '@/features/public/components/Gallery';
+import { GalleryTeaser } from '@/features/public/components/GalleryTeaser';
+import { GalleryTransition } from '@/features/public/components/GalleryTransition';
 import { listMatches } from '@/server/services/matches';
 import { listGroups } from '@/server/services/groups';
 import { listMedia } from '@/server/services/media';
 import { pickFeaturedMatch } from '@/server/services/featured-match';
-import { thumbUrl, videoThumbUrl } from '@/lib/cloudinary-url';
 import { ROUTES } from '@/lib/constants';
 
 // Rede de segurança: as páginas também são revalidadas sob demanda quando o
@@ -64,6 +63,7 @@ export default async function HomePage() {
 
       <FeaturedMatch match={featured} groups={groups} />
 
+      {(upcoming.length > 0 || results.length > 0) && (
       <Container className="flex flex-col gap-10 py-8">
       {upcoming.length > 0 && (
         <section>
@@ -97,45 +97,22 @@ export default async function HomePage() {
         </section>
       )}
 
+      </Container>
+      )}
+
+      <GalleryTransition />
+
       {media.length > 0 && (
-        <section>
+        <section className="flex min-h-[70svh] w-full flex-col justify-center bg-surface py-12">
+          <div className="px-5 sm:px-8">
           <SectionTitle action={{ label: 'Ver galeria', href: ROUTES.galeria }}>
             Galeria
           </SectionTitle>
-          <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-            {media.map((item) => (
-              <li key={item.id}>
-                <Link
-                  href={ROUTES.galeria}
-                  className="relative block aspect-square overflow-hidden rounded-[var(--radius-md)] border border-border"
-                >
-                  <Image
-                    src={
-                      item.type === 'video'
-                        ? videoThumbUrl(item.url, 400)
-                        : thumbUrl(item.url, 400)
-                    }
-                    alt={item.caption ?? ''}
-                    fill
-                    sizes="(max-width: 640px) 50vw, 25vw"
-                    className="object-cover"
-                  />
-                </Link>
-              </li>
-            ))}
-          </ul>
+          </div>
+          <Gallery items={media} />
         </section>
       )}
-      {media.length === 0 && (
-        <section>
-          <SectionTitle>Galeria</SectionTitle>
-          <EmptyState
-            title="Fotos e vídeos em breve"
-            description="Os registros de cada rodada vão aparecer aqui."
-          />
-        </section>
-      )}
-      </Container>
+      {media.length === 0 && <GalleryTeaser />}
     </>
   );
 }

@@ -83,7 +83,7 @@ export function FeaturedMatch({
       : match ? STAGE_LABELS[match.stage] : 'Em breve';
 
   return (
-    <section className="featured-match relative isolate overflow-hidden bg-background py-14 lg:py-20">
+    <section className="featured-match relative isolate flex min-h-[70svh] items-center overflow-hidden bg-background py-14 sm:min-h-[clamp(620px,85svh,850px)] lg:py-20">
       <TribalBackdrop />
 
       <Container wide className="relative z-10">

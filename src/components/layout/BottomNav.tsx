@@ -23,18 +23,18 @@ export function BottomNav({ variant }: { variant: 'bar' | 'inline' }) {
 
   if (variant === 'inline') {
     return (
-      <nav className="hidden lg:block">
-        <ul className="flex items-center gap-1">
+      <nav className="hidden h-full lg:block" aria-label="Navegação principal">
+        <ul className="flex h-full items-stretch gap-8">
           {ITEMS.map((item) => (
             <li key={item.href}>
               <Link
                 href={item.href}
                 aria-current={isActive(item.href) ? 'page' : undefined}
                 className={cn(
-                  'rounded-[var(--radius-md)] px-3 py-2 font-display text-base uppercase tracking-wider transition-colors',
+                  'relative flex h-full items-center font-display text-base uppercase tracking-[0.13em] transition-colors after:absolute after:inset-x-0 after:bottom-0 after:h-[2px] after:origin-left after:bg-primary after:transition-transform',
                   isActive(item.href)
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-elevated hover:text-foreground',
+                    ? 'text-white after:scale-x-100'
+                    : 'text-white/60 after:scale-x-0 hover:text-white hover:after:scale-x-100',
                 )}
               >
                 {item.label}

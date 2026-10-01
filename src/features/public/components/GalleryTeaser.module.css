@@ -1,0 +1,36 @@
+.section { position:relative; isolation:isolate; display:flex; flex-direction:column; justify-content:center; width:100%; min-height:clamp(640px,82svh,760px); overflow:hidden; background:var(--background); padding:40px 0 24px; }
+.backdrop { position:absolute; inset:-28px 0; z-index:-1; pointer-events:none; background:url('/brand/galeria-quadra-noite-v4.webp') center/cover no-repeat; -webkit-mask-image:linear-gradient(to bottom,transparent 3%,rgba(0,0,0,.7) 9%,#000 17%,#000 83%,rgba(0,0,0,.7) 91%,transparent 97%); mask-image:linear-gradient(to bottom,transparent 3%,rgba(0,0,0,.7) 9%,#000 17%,#000 83%,rgba(0,0,0,.7) 91%,transparent 97%); }
+.backdrop::before { content:''; position:absolute; inset:0; background:url('/brand/galeria-quadra-noite-v4.webp') center/100% 100% no-repeat; -webkit-mask-image:linear-gradient(to bottom,#000 12%,transparent 21%,transparent 79%,#000 88%); mask-image:linear-gradient(to bottom,#000 12%,transparent 21%,transparent 79%,#000 88%); }
+.backdrop::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg,rgba(9,13,12,.54),rgba(9,13,12,.34) 52%,rgba(9,13,12,.4)); }
+.layout { display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:30px; padding:16px 7vw 30px; }
+.copy { position:relative; z-index:2; max-width:580px; }
+.eyebrow { display:flex; align-items:center; gap:12px; font-size:13px; letter-spacing:.22em; color:var(--muted-foreground); margin-bottom:25px; }
+.eyebrow span { width:22px; height:8px; background:var(--orange); clip-path:polygon(0 0,70% 0,100% 50%,70% 100%,0 100%,30% 50%); }
+.title { font-family:var(--font-bebas); font-size:clamp(48px,6.3vw,100px); line-height:.98; text-transform:uppercase; }
+.title span { color:var(--green); }
+.description { max-width:380px; margin-top:24px; color:var(--muted-foreground); line-height:1.7; }
+.status { display:flex; align-items:center; gap:14px; border-top:1px solid var(--border); padding-top:23px; margin-top:32px; max-width:380px; color:var(--orange); }
+.status strong { display:block; font-family:var(--font-bebas); font-size:18px; font-weight:400; letter-spacing:.04em; color:var(--foreground); }
+.status span { display:block; color:var(--muted-foreground); font-size:12px; margin-top:4px; }
+.perspective { perspective:1100px; height:475px; display:grid; place-items:center; }
+.scene { position:relative; width:350px; height:390px; transform-style:preserve-3d; }
+.card { position:absolute; border:1px solid var(--border); box-shadow:8px 10px 0 var(--background),9px 11px 0 var(--border); }
+.mainCard { inset:0; background:var(--surface); overflow:visible; transform:translateZ(30px); transform-style:preserve-3d; }
+.cardHeader,.cardFooter { position:absolute; left:18px; right:18px; display:flex; justify-content:space-between; align-items:center; font-family:var(--font-bebas); letter-spacing:.12em; font-size:11px; }
+.cardHeader { top:17px; color:var(--muted-foreground); }
+.cardFooter { bottom:17px; color:var(--muted-foreground); }
+.court { position:absolute; inset:36px 0; width:100%; height:calc(100% - 72px); stroke:var(--green-muted); stroke-width:2; }
+.number { position:absolute; top:61px; left:25px; font-family:var(--font-bebas); font-size:112px; color:var(--green-dark); line-height:1; }
+.number span { font-size:70px; }
+.ball { position:absolute; width:205px; right:-28px; top:119px; transform:translateZ(65px); filter:drop-shadow(8px 15px 0 #090d0c); }
+.ball svg { width:100%; }
+.backCard { width:280px; height:340px; left:-55px; top:-25px; background:var(--green-dark); transform:translateZ(-45px) rotate(-12deg); padding:20px; color:var(--foreground); font-family:var(--font-bebas); letter-spacing:.16em; }
+.chevrons { margin-top:70px; font-size:90px; color:var(--green-muted); }
+.frontCard { bottom:-25px; left:-65px; width:190px; padding:19px; background:var(--orange-muted); color:var(--background); transform:translateZ(90px) rotate(-7deg); }
+.frontCard>span { font-family:var(--font-bebas); font-size:11px; letter-spacing:.13em; }
+.frontCard strong { display:block; font-family:var(--font-bebas); font-size:28px; font-weight:400; line-height:1; margin-top:9px; }
+.frameMarks { display:flex; justify-content:space-between; align-items:center; margin-top:18px; }
+.signature { display:flex; justify-content:center; align-items:center; gap:18px; font-family:var(--font-bebas); color:var(--muted-foreground); letter-spacing:.2em; font-size:11px; }
+.signature i { width:4px; height:4px; background:var(--green-muted); transform:rotate(45deg); }
+@media(max-width:1000px) { .layout { padding-inline:5vw; gap:16px; }.scene { width:280px; height:350px; }.perspective { height:440px; }.backCard { width:245px; height:300px; left:-28px; }.frontCard { left:-20px; width:160px; }.ball { width:175px; right:-12px; }.title { font-size:62px; } }
+@media(max-width:639px) { .section { min-height:0; padding:28px 0 24px; }.layout { grid-template-columns:1fr; gap:20px; padding:18px 24px 30px; }.copy { max-width:400px; }.eyebrow { margin-bottom:18px; font-size:11px; }.title { font-size:clamp(48px,13vw,70px); }.description { font-size:14px; margin-top:18px; }.status { margin-top:24px; }.perspective { height:325px; }.scene { width:235px; height:295px; }.backCard { width:215px; height:265px; left:-20px; top:-10px; }.frontCard { width:140px; padding:14px; left:-15px; bottom:-15px; }.frontCard strong { font-size:23px; }.ball { width:155px; top:92px; right:-18px; }.number { font-size:85px; }.cardFooter { font-size:8px; }.backdrop { background-image:url('/brand/galeria-quadra-noite-mobile-v4.webp'); }.backdrop::before { display:none; }.backdrop::after { background:rgba(9,13,12,.52); }.signature { gap:12px; font-size:9px; } }

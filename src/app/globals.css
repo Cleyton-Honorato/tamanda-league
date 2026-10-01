@@ -59,6 +59,31 @@
 }
 
 @layer components {
+  .site-header__brand,
+  .site-header nav,
+  .site-header__admin {
+    animation: header-arrive 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .site-header nav {
+    animation-delay: 90ms;
+  }
+
+  .site-header__admin {
+    animation-delay: 160ms;
+  }
+
+  @keyframes header-arrive {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .login-scene {
     background-color: var(--background);
   }
@@ -224,6 +249,12 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .site-header__brand,
+    .site-header nav,
+    .site-header__admin {
+      animation: none;
+    }
+
     .hero-rise {
       animation: none;
     }
