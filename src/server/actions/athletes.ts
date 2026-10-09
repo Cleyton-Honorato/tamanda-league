@@ -4,11 +4,13 @@ import { z } from 'zod';
 import { adminAction } from '@/server/actions/_helpers';
 import { deleteAthlete, saveAthlete, setAthleteLevel } from '@/server/services/athletes';
 
+const athleteLevelSchema = z.number().min(0.5).max(5).refine((value) => Number.isInteger(value * 2), 'Use intervalos de meia estrela.');
+
 const athleteSchema = z.object({
   id: z.string().regex(/^[0-9a-f]{24}$/i).optional(),
   name: z.string().trim().min(2, 'Informe o nome do atleta.').max(100),
   nickname: z.string().trim().max(50).nullish().transform((value) => value || null),
-  level: z.union([z.number().int().min(1).max(5), z.null()]),
+  level: z.union([athleteLevelSchema, z.null()]),
   teamId: z.union([z.string().regex(/^[0-9a-f]{24}$/i), z.null()]),
 });
 
@@ -34,7 +36,7 @@ export async function setAthleteLevelAction(input: unknown) {
   return adminAction({
     schema: z.object({
       id: z.string().regex(/^[0-9a-f]{24}$/i),
-      level: z.number().int().min(1).max(5),
+      level: athleteLevelSchema,
     }),
     input,
     revalidate: ['/admin/atletas', '/admin/times'],

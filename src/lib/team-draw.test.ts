@@ -4,7 +4,7 @@ import { drawBalancedTeams } from './team-draw';
 const athletes = Array.from({ length: 45 }, (_, index) => ({
   id: String(index),
   name: `Atleta ${index}`,
-  level: (index % 5) + 1,
+  level: ((index % 10) + 1) / 2,
 }));
 
 describe('drawBalancedTeams', () => {
@@ -22,5 +22,10 @@ describe('drawBalancedTeams', () => {
 
   it('refuses unrated athletes', () => {
     expect(() => drawBalancedTeams([{ id: 'a', name: 'A', level: 0 }, ...athletes], 'seed')).toThrow();
+  });
+
+  it('accepts half-star ratings and rejects unsupported fractions', () => {
+    expect(() => drawBalancedTeams(athletes, 'half-star-seed')).not.toThrow();
+    expect(() => drawBalancedTeams([{ id: 'a', name: 'A', level: 1.25 }, ...athletes], 'seed')).toThrow();
   });
 });

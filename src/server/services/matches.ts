@@ -5,6 +5,10 @@ import { DomainError, NotFoundError } from '@/server/errors';
 import { Match, type MatchDocument } from '@/server/models/match';
 import { Team } from '@/server/models/team';
 import { Athlete } from '@/server/models/athlete';
+import { Group } from '@/server/models/group';
+import { databaseSupportsTransactions } from '@/server/db-capabilities';
+import { groupFixtures } from '@/lib/group-fixtures';
+import { gameTotals, remainingTime } from '@/lib/live-game';
 import { toMatchDto } from '@/server/serialization';
 import { getTeamsIndex } from '@/server/services/teams';
 import { nextPosition, stagesFrom, winnerOf } from '@/server/services/bracket';
@@ -46,9 +50,65 @@ export async function listMatches(): Promise<MatchDto[]> {
 export async function listGroupMatches(): Promise<MatchDto[]> {
   await dbConnect();
   const matches = await Match.find({ stage: 'GROUP' })
-    .sort({ scheduledAt: 1, createdAt: 1 })
+    .sort({ round: 1, scheduledAt: 1, createdAt: 1 })
     .lean();
   return hydrate(matches);
+}
+
+/** Monta um turno único por conferência, sem definir datas automaticamente. */
+export async function generateGroupFixtures(): Promise<number> {
+  const db = await dbConnect();
+  const [groups, teams, existing] = await Promise.all([
+    Group.find().sort({ order: 1, name: 1 }).lean(),
+    Team.find().sort({ name: 1 }).lean(),
+    Match.countDocuments({ stage: 'GROUP' }),
+  ]);
+  if (existing) throw new DomainError('A fase de grupos já possui jogos. Edite ou exclua os confrontos existentes antes de gerar novamente.');
+  if (groups.length !== 2) throw new DomainError('Cadastre as duas conferências antes de montar a fase de grupos.');
+  if (teams.some((team) => !team.groupId || !groups.some((group) => group._id.equals(team.groupId)))) {
+    throw new DomainError('Todos os times precisam pertencer a uma das duas conferências.');
+  }
+  const rosters = await Athlete.aggregate<{ _id: Types.ObjectId; count: number }>([
+    { $match: { teamId: { $ne: null } } },
+    { $group: { _id: '$teamId', count: { $sum: 1 } } },
+  ]);
+  const rosterByTeam = new Map(rosters.map((roster) => [roster._id.toString(), roster.count]));
+  if (teams.some((team) => rosterByTeam.get(team._id.toString()) !== 4)) {
+    throw new DomainError('Cada time precisa ter quatro atletas antes de montar os jogos.');
+  }
+  const fixtures = groups.flatMap((group) => {
+    const members = teams.filter((team) => team.groupId?.equals(group._id)).map((team) => team._id.toString());
+    if (members.length < 2) throw new DomainError(`A ${group.name} precisa ter ao menos dois times.`);
+    return groupFixtures(members).map((fixture) => ({
+      _id: new Types.ObjectId(),
+      stage: 'GROUP' as const,
+      groupId: group._id,
+      round: fixture.round,
+      slot: null,
+      teamAId: new Types.ObjectId(fixture.teamAId),
+      teamBId: new Types.ObjectId(fixture.teamBId),
+      scheduledAt: null,
+      status: 'SCHEDULED' as const,
+    }));
+  });
+  if (await databaseSupportsTransactions()) {
+    const session = await db.startSession();
+    try {
+      await session.withTransaction(async () => {
+        if (await Match.countDocuments({ stage: 'GROUP' }).session(session)) throw new DomainError('A fase de grupos já foi montada. Atualize a página.');
+        await Match.insertMany(fixtures, { session, ordered: true });
+      });
+    } finally { await session.endSession(); }
+  } else {
+    try {
+      if (await Match.countDocuments({ stage: 'GROUP' })) throw new DomainError('A fase de grupos já foi montada. Atualize a página.');
+      await Match.insertMany(fixtures, { ordered: true });
+    } catch (error) {
+      await Match.deleteMany({ _id: { $in: fixtures.map((fixture) => fixture._id) } });
+      throw error;
+    }
+  }
+  return fixtures.length;
 }
 
 export async function listKnockoutMatches(): Promise<MatchDto[]> {
@@ -90,6 +150,25 @@ export async function countMatches(): Promise<{
   return { total, scheduled, finished };
 }
 
+/** Soma as cestas atribuídas aos atletas na mesa de jogo, inclusive em partidas em andamento. */
+export async function getTopScorer(): Promise<{ athleteId: string; points: number; name: string } | null> {
+  await dbConnect();
+  const games = await Match.find({ 'live.baskets.0': { $exists: true } }).select({ live: 1 }).lean();
+  const totals = new Map<string, { points: number; name: string }>();
+  for (const game of games) {
+    if (!game.live) continue;
+    const players = new Map(game.live.players.map((player) => [player.id, player.name]));
+    for (const basket of game.live.baskets) {
+      const name = players.get(basket.playerId);
+      if (!name) continue;
+      const current = totals.get(basket.playerId);
+      totals.set(basket.playerId, { points: (current?.points ?? 0) + basket.points, name });
+    }
+  }
+  const leader = [...totals].sort((a, b) => b[1].points - a[1].points || a[1].name.localeCompare(b[1].name, 'pt-BR'))[0];
+  return leader ? { athleteId: leader[0], ...leader[1] } : null;
+}
+
 export interface GroupMatchInput {
   groupId: string;
   teamAId: string;
@@ -114,11 +193,22 @@ async function assertTeamsExist(teamAId: string, teamBId: string) {
   }
 }
 
+async function assertTeamsInGroup(groupId: string, teamAId: string, teamBId: string) {
+  const count = await Team.countDocuments({
+    _id: { $in: [teamAId, teamBId] },
+    groupId: new Types.ObjectId(groupId),
+  });
+  if (count !== 2) {
+    throw new DomainError('Os dois times precisam pertencer à mesma conferência do jogo.', 'groupId');
+  }
+}
+
 export async function createGroupMatch(
   input: GroupMatchInput,
 ): Promise<MatchDto> {
   await dbConnect();
   await assertTeamsExist(input.teamAId, input.teamBId);
+  await assertTeamsInGroup(input.groupId, input.teamAId, input.teamBId);
 
   const match = await Match.create({
     stage: 'GROUP',
@@ -140,6 +230,7 @@ export async function updateGroupMatch(
 ): Promise<MatchDto> {
   await dbConnect();
   await assertTeamsExist(input.teamAId, input.teamBId);
+  await assertTeamsInGroup(input.groupId, input.teamAId, input.teamBId);
 
   const match = await Match.findById(id);
   if (!match) throw new NotFoundError('Jogo não encontrado.');
@@ -148,6 +239,9 @@ export async function updateGroupMatch(
   }
 
   match.groupId = new Types.ObjectId(input.groupId);
+  if (match.live && (match.teamAId?.toString() !== input.teamAId || match.teamBId?.toString() !== input.teamBId)) {
+    throw new DomainError('Este jogo já possui uma mesa registrada. Os times não podem ser trocados.');
+  }
   match.teamAId = new Types.ObjectId(input.teamAId);
   match.teamBId = new Types.ObjectId(input.teamBId);
   match.scheduledAt = input.scheduledAt;
@@ -200,6 +294,7 @@ export async function finishMatch(
   id: string,
   scoreA: number,
   scoreB: number,
+  expectedVersion?: number,
 ): Promise<MatchDto> {
   await dbConnect();
 
@@ -215,14 +310,21 @@ export async function finishMatch(
 
   const match = await Match.findById(id);
   if (!match) throw new NotFoundError('Jogo não encontrado.');
+  if (expectedVersion !== undefined && (match.__v ?? 0) !== expectedVersion) throw new DomainError('A mesa mudou. Atualize antes de encerrar.');
+  if (match.live) {
+    const totals = gameTotals(match.live);
+    if (scoreA !== totals.A || scoreB !== totals.B) throw new DomainError('Ajuste as cestas na mesa de jogo para corrigir este placar.');
+    match.live = { ...match.live, remainingMs: remainingTime(match.live, Date.now()), startedAt: null };
+    match.markModified('live');
+  }
   if (!match.teamAId || !match.teamBId) {
     throw new DomainError('Defina os dois times antes de lançar o placar.');
   }
 
   const next = await findNextMatch(match);
-  if (next && next.status === 'FINISHED') {
+  if (next && (next.status === 'FINISHED' || next.live)) {
     throw new DomainError(
-      'O jogo seguinte do chaveamento já foi encerrado. Reabra-o antes de mexer neste placar.',
+      'O jogo seguinte do chaveamento já tem resultado ou mesa registrada. Não é possível alterar este resultado.',
     );
   }
 
@@ -261,9 +363,9 @@ export async function reopenMatch(id: string): Promise<MatchDto> {
   if (!match) throw new NotFoundError('Jogo não encontrado.');
 
   const next = await findNextMatch(match);
-  if (next && next.status === 'FINISHED') {
+  if (next && (next.status === 'FINISHED' || next.live)) {
     throw new DomainError(
-      'O jogo seguinte do chaveamento já foi encerrado. Reabra-o primeiro.',
+      'O jogo seguinte do chaveamento já tem resultado ou mesa registrada. Não é possível reabrir este jogo.',
     );
   }
 
@@ -356,6 +458,9 @@ export async function setBracketSlotTeams(
   if (!match) throw new NotFoundError('Confronto não encontrado.');
   if (match.status === 'FINISHED') {
     throw new DomainError('Reabra o jogo antes de trocar os times.');
+  }
+  if (match.live && (match.teamAId?.toString() !== (teamAId ?? undefined) || match.teamBId?.toString() !== (teamBId ?? undefined))) {
+    throw new DomainError('Este confronto já possui uma mesa registrada. Os times não podem ser trocados.');
   }
 
   if (teamAId && teamBId && teamAId === teamBId) {

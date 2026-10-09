@@ -7,6 +7,8 @@ import { Athlete } from '@/server/models/athlete';
 import { toTeamDto, toTeamRefDto } from '@/server/serialization';
 import type { TeamDto, TeamRefDto } from '@/lib/types';
 import { destroyAsset } from '@/server/services/cloudinary';
+import { databaseSupportsTransactions } from '@/server/db-capabilities';
+import { Types, type ClientSession } from 'mongoose';
 
 export async function listTeams(): Promise<TeamDto[]> {
   await dbConnect();
@@ -61,6 +63,13 @@ export async function updateTeam(
   const current = await Team.findById(id).lean();
   if (!current) throw new NotFoundError('Time não encontrado.');
 
+  if (current.groupId?.toString() !== input.groupId) {
+    const groupGames = await Match.countDocuments({ stage: 'GROUP', $or: [{ teamAId: id }, { teamBId: id }] });
+    if (groupGames > 0) {
+      throw new DomainError('Este time já tem jogos na fase de grupos. Ajuste os jogos antes de mudar sua conferência.', 'groupId');
+    }
+  }
+
   const team = await Team.findByIdAndUpdate(id, input, { returnDocument: 'after' }).lean();
   if (!team) throw new NotFoundError('Time não encontrado.');
 
@@ -73,6 +82,44 @@ export async function updateTeam(
   }
 
   return toTeamDto(team);
+}
+
+/** Move um atleta para uma vaga livre ou troca sua posição com outro atleta. */
+export async function transferAthlete(athleteId: string, destinationTeamId: string | null, swapAthleteId: string | null): Promise<void> {
+  const db = await dbConnect();
+  const run = async (session?: ClientSession) => {
+    const source = await Athlete.findById(athleteId).session(session ?? null).lean();
+    if (!source) throw new NotFoundError('Atleta não encontrado.');
+    const sourceTeamId = source.teamId?.toString() ?? null;
+    if (sourceTeamId === destinationTeamId) throw new DomainError('Escolha outro time para o atleta.');
+    if (destinationTeamId && !await Team.exists({ _id: destinationTeamId }).session(session ?? null)) throw new NotFoundError('Time de destino não encontrado.');
+    const destinationRoster = destinationTeamId ? await Athlete.find({ teamId: destinationTeamId }).session(session ?? null).lean() : [];
+    const replacement = swapAthleteId ? destinationRoster.find((athlete) => athlete._id.toString() === swapAthleteId) : null;
+    if (swapAthleteId && !replacement) throw new DomainError('O atleta escolhido para a troca não está no time de destino.');
+    if (!replacement && destinationRoster.length >= 4) throw new DomainError('O time de destino está completo. Escolha um atleta para trocar.');
+    const affected = [sourceTeamId, destinationTeamId].filter((id): id is string => Boolean(id));
+    if (affected.length && await Match.exists({ $or: [{ teamAId: { $in: affected } }, { teamBId: { $in: affected } }] }).session(session ?? null)) {
+      throw new DomainError('Não é possível alterar o elenco de um time que já tem jogos.');
+    }
+    const updated = await Athlete.updateOne({ _id: athleteId, teamId: source.teamId ?? null }, { $set: { teamId: destinationTeamId ? new Types.ObjectId(destinationTeamId) : null } }, { session });
+    if (updated.modifiedCount !== 1) throw new DomainError('O elenco mudou. Atualize a página e tente novamente.');
+    if (replacement) {
+      try {
+        const swapped = await Athlete.updateOne({ _id: replacement._id, teamId: destinationTeamId }, { $set: { teamId: source.teamId ?? null } }, { session });
+        if (swapped.modifiedCount !== 1) throw new DomainError('O elenco mudou. Atualize a página e tente novamente.');
+      } catch (error) {
+        if (!session) await Athlete.updateOne({ _id: athleteId, teamId: destinationTeamId }, { $set: { teamId: source.teamId ?? null } });
+        throw error;
+      }
+    }
+  };
+  if (await databaseSupportsTransactions()) {
+    const session = await db.startSession();
+    try { await session.withTransaction(() => run(session)); }
+    finally { await session.endSession(); }
+  } else {
+    await run();
+  }
 }
 
 export async function deleteTeam(id: string): Promise<void> {

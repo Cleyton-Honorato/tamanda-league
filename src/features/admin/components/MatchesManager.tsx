@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Pencil, Plus, RotateCcw, Target, Trash2 } from 'lucide-react';
+import { Dices, Pencil, Plus, RotateCcw, Target, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Field';
 import { Modal } from '@/components/ui/Modal';
@@ -11,6 +11,7 @@ import { ScoreModal } from './ScoreModal';
 import { ActionError, onSubmitForm, useAction } from './useAction';
 import {
   deleteMatchAction,
+  generateGroupFixturesAction,
   reopenMatchAction,
   saveGroupMatchAction,
 } from '@/server/actions/matches';
@@ -34,6 +35,7 @@ export function MatchesManager({
   const save = useAction(saveGroupMatchAction);
   const remove = useAction(deleteMatchAction);
   const reopen = useAction(reopenMatchAction);
+  const generate = useAction(generateGroupFixturesAction);
 
   const formOpen = creating || editing !== null;
 
@@ -69,6 +71,9 @@ export function MatchesManager({
   // Só faz sentido escalar times do grupo escolhido.
   const teamsInGroup = teams.filter((team) => team.groupId === groupId);
   const canCreate = groups.length > 0 && teams.length >= 2;
+  const eligibleGroups = groups.length === 2 && groups.every((group) => teams.filter((team) => team.groupId === group.id).length >= 2);
+  const fixtureCount = groups.reduce((total, group) => { const count = teams.filter((team) => team.groupId === group.id).length; return total + count * (count - 1) / 2; }, 0);
+  const rounds = [...new Set(matches.map((match) => match.round))].sort((a, b) => (a ?? Number.MAX_SAFE_INTEGER) - (b ?? Number.MAX_SAFE_INTEGER));
 
   return (
     <div className="flex flex-col gap-4">
@@ -93,66 +98,39 @@ export function MatchesManager({
 
       <ActionError message={remove.error ?? reopen.error} />
 
+      {matches.length === 0 && eligibleGroups && <div className="rounded-[var(--radius-lg)] border border-primary/30 bg-surface p-5 sm:p-6">
+        <p className="font-display text-xs uppercase tracking-[.2em] text-primary">Fase de grupos</p>
+        <h2 className="mt-2 font-display text-2xl uppercase">Montar confrontos</h2>
+        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Os times estão definidos, mas os jogos ainda não foram criados. Gere um turno único dentro de cada conferência: {fixtureCount} partidas ao todo, com datas a definir. Depois você pode agendar cada jogo.</p>
+        <Button className="mt-4" disabled={generate.pending} onClick={() => generate.run({})}><Dices className="h-4 w-4" />{generate.pending ? 'Montando…' : 'Gerar fase de grupos'}</Button>
+        <div className="mt-3"><ActionError message={generate.error} /></div>
+      </div>}
+
       {matches.length === 0 ? (
         <EmptyState
           title="Nenhum jogo"
-          description="Monte a tabela da fase de grupos."
+          description="Gere os confrontos entre os times das duas conferências ou cadastre um jogo manualmente."
         />
       ) : (
-        <ul className="flex flex-col gap-2">
-          {matches.map((match, index) => (
-            <li key={match.id}>
-              <MatchRow
-                match={match}
-                index={index}
-                groups={groups}
-                actions={
-                  <>
-                    {match.status === 'SCHEDULED' ? (
-                      <Button size="sm" onClick={() => setScoring(match)}>
-                        <Target className="h-4 w-4" />
-                        Placar
-                      </Button>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={reopen.pending}
-                        onClick={() => reopen.run({ id: match.id })}
-                      >
-                        <RotateCcw className="h-4 w-4" />
-                        Reabrir
-                      </Button>
-                    )}
-
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => startEdit(match)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                      Editar
-                    </Button>
-
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={remove.pending}
-                      onClick={() => {
-                        if (confirm('Excluir este jogo?')) {
-                          remove.run({ id: match.id });
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Excluir
-                    </Button>
-                  </>
-                }
-              />
-            </li>
-          ))}
-        </ul>
+        <div className="space-y-5">
+          {rounds.map((round) => <section key={round ?? 'manual'}>
+            <div className="mb-2 flex items-center gap-3">
+              <h2 className="font-display text-lg uppercase text-primary">{round === null ? 'Jogos avulsos' : `Rodada ${round}`}</h2>
+              <span className="h-px flex-1 bg-border" />
+              <span className="font-display text-xs text-muted-foreground">{matches.filter((match) => match.round === round).length} jogos</span>
+            </div>
+            <ul className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+              {matches.filter((match) => match.round === round).map((match, index) => <li key={match.id} className="min-w-0">
+                <MatchRow match={match} index={index} groups={groups} compact actions={<>
+                  {match.status === 'SCHEDULED' ? <button type="button" onClick={() => setScoring(match)} aria-label="Lançar placar" title="Placar" className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg bg-primary text-background transition-colors hover:bg-primary/85"><Target className="h-4 w-4" /></button>
+                    : <button type="button" disabled={reopen.pending} onClick={() => reopen.run({ id: match.id })} aria-label="Reabrir jogo" title="Reabrir" className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"><RotateCcw className="h-4 w-4" /></button>}
+                  <button type="button" onClick={() => startEdit(match)} aria-label="Editar jogo" title="Editar" className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary"><Pencil className="h-4 w-4" /></button>
+                  <button type="button" disabled={remove.pending} onClick={() => { if (confirm('Excluir este jogo?')) remove.run({ id: match.id }); }} aria-label="Excluir jogo" title="Excluir" className="ml-auto inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50"><Trash2 className="h-4 w-4" /></button>
+                </>} />
+              </li>)}
+            </ul>
+          </section>)}
+        </div>
       )}
 
       <Modal

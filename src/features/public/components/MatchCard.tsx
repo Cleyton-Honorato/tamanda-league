@@ -25,6 +25,11 @@ export function MatchCard({
   const aWins = finished && (match.scoreA ?? 0) > (match.scoreB ?? 0);
   const bWins = finished && (match.scoreB ?? 0) > (match.scoreA ?? 0);
   const group = groups.find((item) => item.id === match.groupId);
+  const groupTone = match.stage === 'GROUP'
+    ? group?.name.toLowerCase().includes('laranja') ? 'orange' : 'green'
+    : null;
+  const accent = groupTone ?? accentForIndex(index);
+  const winnerText = groupTone === 'orange' ? 'text-accent' : 'text-primary';
 
   const label =
     match.stage === 'GROUP'
@@ -32,7 +37,7 @@ export function MatchCard({
       : `${STAGE_LABELS[match.stage]}${match.slot && match.stage !== 'F' ? ` · Jogo ${match.slot}` : ''}`;
 
   return (
-    <Card accent={accentForIndex(index)} className="px-3 py-3">
+    <Card accent={accent} className="px-3 py-3">
       <div className="mb-2.5 flex items-center justify-between gap-2">
         <span className="truncate font-display text-sm uppercase tracking-widest text-muted-foreground">
           {label}
@@ -41,7 +46,7 @@ export function MatchCard({
         {finished ? (
           <Badge tone="neutral">Encerrado</Badge>
         ) : match.scheduledAt ? (
-          <Badge tone="green" icon={<Clock className="h-3.5 w-3.5" />}>
+          <Badge tone={groupTone ?? 'green'} icon={<Clock className="h-3.5 w-3.5" />}>
             {showDate
               ? formatDateTimeShort(match.scheduledAt)
               : formatTime(match.scheduledAt)}
@@ -53,11 +58,11 @@ export function MatchCard({
 
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          <TeamCrest team={match.teamA} size="sm" accent="green" />
+          <TeamCrest team={match.teamA} size="sm" accent={groupTone ?? 'green'} />
           <span
             className={cn(
               'min-w-0 truncate font-display text-lg uppercase leading-tight',
-              aWins ? 'text-primary' : 'text-foreground',
+              aWins ? winnerText : 'text-foreground',
             )}
           >
             {match.teamA?.name ?? 'A definir'}
@@ -66,11 +71,11 @@ export function MatchCard({
 
         {finished ? (
           <span className="shrink-0 font-display text-2xl leading-none">
-            <span className={aWins ? 'text-primary' : 'text-muted-foreground'}>
+            <span className={aWins ? winnerText : 'text-muted-foreground'}>
               {match.scoreA}
             </span>
             <span className="mx-1 text-muted-foreground">×</span>
-            <span className={bWins ? 'text-primary' : 'text-muted-foreground'}>
+            <span className={bWins ? winnerText : 'text-muted-foreground'}>
               {match.scoreB}
             </span>
           </span>
@@ -81,11 +86,11 @@ export function MatchCard({
         )}
 
         <div className="flex min-w-0 flex-row-reverse items-center gap-2">
-          <TeamCrest team={match.teamB} size="sm" accent="orange" />
+          <TeamCrest team={match.teamB} size="sm" accent={groupTone ?? 'orange'} />
           <span
             className={cn(
               'min-w-0 truncate text-right font-display text-lg uppercase leading-tight',
-              bWins ? 'text-primary' : 'text-foreground',
+              bWins ? winnerText : 'text-foreground',
             )}
           >
             {match.teamB?.name ?? 'A definir'}

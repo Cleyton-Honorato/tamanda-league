@@ -14,7 +14,7 @@ import {
 } from '@/server/services/media';
 import { getUploadSignature } from '@/server/services/cloudinary';
 
-const REVALIDATE = ['/', '/galeria', '/admin/galeria'];
+const REVALIDATE = ['/', '/admin/galeria'];
 
 /**
  * Credencial para o navegador enviar o arquivo direto ao Cloudinary. Só o

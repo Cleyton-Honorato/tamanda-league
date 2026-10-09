@@ -1,5 +1,6 @@
 'use server';
 
+import { z } from 'zod';
 import { adminAction } from '@/server/actions/_helpers';
 import {
   bracketSlotSchema,
@@ -15,6 +16,7 @@ import {
   deleteMatch,
   ensureBracket,
   finishMatch,
+  generateGroupFixtures,
   reopenMatch,
   scheduleMatch,
   setBracketSlotTeams,
@@ -45,6 +47,15 @@ export async function saveGroupMatchAction(input: unknown) {
         ? updateGroupMatch(data.id, payload)
         : createGroupMatch(payload);
     },
+  });
+}
+
+export async function generateGroupFixturesAction(input: unknown) {
+  return adminAction({
+    schema: z.object({}),
+    input,
+    revalidate: REVALIDATE,
+    handler: () => generateGroupFixtures(),
   });
 }
 

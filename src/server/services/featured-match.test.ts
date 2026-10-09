@@ -8,6 +8,7 @@ function makeMatch(overrides: Partial<MatchDto> & { id: string }): MatchDto {
   return {
     stage: 'GROUP',
     groupId: null,
+    round: null,
     slot: null,
     teamA: null,
     teamB: null,

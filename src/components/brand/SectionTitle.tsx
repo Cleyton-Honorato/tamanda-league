@@ -8,15 +8,17 @@ export function SectionTitle({
   children,
   action,
   className,
+  tone = 'mixed',
 }: {
   children: ReactNode;
   action?: { label: string; href: string };
   className?: string;
+  tone?: 'mixed' | 'green' | 'orange';
 }) {
   return (
     <div className={cn('mb-3 flex items-center justify-between gap-3', className)}>
       <h2 className="flex items-center gap-2 font-display text-2xl uppercase tracking-wide">
-        <Chevrons />
+        <Chevrons tone={tone} />
         <span>{children}</span>
       </h2>
 

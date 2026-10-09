@@ -20,6 +20,34 @@ function normalizeSearch(value: string) {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR').trim();
 }
 
+function formatLevel(value: number) {
+  return value.toLocaleString('pt-BR', { minimumFractionDigits: value % 1 === 0 ? 0 : 1 });
+}
+
+function StarRating({ value, onChange, disabled = false, label }: { value: number | null; onChange: (value: number) => void; disabled?: boolean; label: string }) {
+  return (
+    <div className="flex max-w-full items-center gap-1" role="group" aria-label={label}>
+      {Array.from({ length: 5 }, (_, index) => {
+        const halfValue = index + 0.5;
+        const fullValue = index + 1;
+        const fill = value === null ? 0 : Math.min(1, Math.max(0, value - index));
+        return (
+          <span key={fullValue} className={`relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md border transition-colors ${fill > 0 ? 'border-accent/45 bg-accent/15 text-accent' : 'border-white/10 bg-white/[0.04] text-muted-foreground'}`}>
+            <Star aria-hidden="true" className="h-5 w-5" />
+            {fill > 0 && (
+              <span aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden text-accent" style={{ clipPath: `inset(0 ${100 - fill * 100}% 0 0)` }}>
+                <Star className="h-5 w-5 fill-current" />
+              </span>
+            )}
+            <button type="button" disabled={disabled} onClick={() => onChange(halfValue)} aria-label={`Definir ${formatLevel(halfValue)} estrelas`} aria-pressed={value === halfValue} title={`${formatLevel(halfValue)} estrelas`} className="absolute inset-y-0 left-0 z-10 w-1/2 cursor-pointer transition-colors hover:bg-accent/10 focus-visible:bg-accent/15 focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-primary disabled:cursor-wait" />
+            <button type="button" disabled={disabled} onClick={() => onChange(fullValue)} aria-label={`Definir ${formatLevel(fullValue)} estrelas`} aria-pressed={value === fullValue} title={`${formatLevel(fullValue)} estrelas`} className="absolute inset-y-0 right-0 z-10 w-1/2 cursor-pointer transition-colors hover:bg-accent/10 focus-visible:bg-accent/15 focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-primary disabled:cursor-wait" />
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 export function AthletesManager({ athletes, teams }: { athletes: AthleteDto[]; teams: TeamDto[] }) {
   const [query, setQuery] = useState('');
   const searchInput = useRef<HTMLInputElement>(null);
@@ -125,15 +153,10 @@ export function AthletesManager({ athletes, teams }: { athletes: AthleteDto[]; t
                 <div className="relative border-t border-white/10 bg-black/20 px-5 py-3">
                   <div className="mb-2 flex items-center justify-between gap-2 font-display text-xs uppercase tracking-[0.16em]">
                     <span className="text-muted-foreground">Nível</span>
-                    <span className={athlete.level === null ? 'text-muted-foreground' : 'text-accent'}>{athlete.level === null ? 'A definir' : `${athlete.level} de 5`}</span>
+                    <span className={athlete.level === null ? 'text-muted-foreground' : 'text-accent'}>{athlete.level === null ? 'A definir' : `${formatLevel(athlete.level)} de 5`}</span>
                   </div>
-                  <div className="flex items-center gap-1.5" role="group" aria-label={`Avaliar ${athlete.name}: ${athlete.level === null ? 'sem nível' : `${athlete.level} de 5 estrelas`}`}>
-                    {Array.from({ length: 5 }, (_, star) => {
-                      const value = star + 1;
-                      const selected = athlete.level !== null && value <= athlete.level;
-                      return <button key={value} type="button" disabled={rate.pending} onClick={() => rate.run({ id: athlete.id, level: value })} aria-label={`${value} ${value === 1 ? 'estrela' : 'estrelas'} para ${athlete.name}`} aria-pressed={athlete.level === value} title={`Definir ${value} ${value === 1 ? 'estrela' : 'estrelas'}`} className={`flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border transition-colors hover:border-accent/60 hover:bg-accent/10 hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-wait ${selected ? 'border-accent/45 bg-accent/15 text-accent' : 'border-white/10 bg-white/[0.04] text-muted-foreground'}`}><Star className={`h-5 w-5 ${selected ? 'fill-current' : ''}`} /></button>;
-                    })}
-                  </div>
+                  <StarRating value={athlete.level} disabled={rate.pending} onChange={(value) => rate.run({ id: athlete.id, level: value })} label={`Avaliar ${athlete.name}: ${athlete.level === null ? 'sem nível' : `${formatLevel(athlete.level)} de 5 estrelas`}`} />
+                  <p className="mt-2 text-[11px] text-muted-foreground">Use o lado esquerdo da estrela para dar meia estrela.</p>
                 </div>
               </Card>
             </li>
@@ -151,14 +174,11 @@ export function AthletesManager({ athletes, teams }: { athletes: AthleteDto[]; t
           </Select>}
           <fieldset>
             <legend className="mb-1.5 font-display text-sm uppercase tracking-widest text-muted-foreground">Nível do atleta</legend>
-            <div className="flex items-center gap-1">
-              {Array.from({ length: 5 }, (_, index) => {
-                const value = index + 1;
-                return <button key={value} type="button" onClick={() => setLevel(value)} aria-label={`${value} ${value === 1 ? 'estrela' : 'estrelas'}`} aria-pressed={level === value} className="flex h-10 w-10 items-center justify-center rounded-md text-accent focus-visible:outline-2 focus-visible:outline-primary"><Star className={`h-6 w-6 ${level !== null && value <= level ? 'fill-current' : 'opacity-40'}`} /></button>;
-              })}
+            <div className="flex flex-wrap items-center gap-1">
+              <StarRating value={level} onChange={setLevel} label={level === null ? 'Atleta ainda não avaliado' : `Nível atual: ${formatLevel(level)} de 5 estrelas`} />
               {level !== null && <button type="button" onClick={() => setLevel(null)} className="ml-2 text-xs text-muted-foreground underline focus-visible:outline-2 focus-visible:outline-primary">Limpar</button>}
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">{level === null ? 'Ainda não avaliado' : `${level} de 5 estrelas`}</p>
+            <p className="mt-2 text-xs text-muted-foreground">{level === null ? 'Ainda não avaliado' : `${formatLevel(level)} de 5 estrelas`} · lado esquerdo seleciona meia estrela</p>
             {save.fieldErrors.level && <p className="mt-1 text-xs text-accent">{save.fieldErrors.level}</p>}
           </fieldset>
           <ActionError message={save.error} />

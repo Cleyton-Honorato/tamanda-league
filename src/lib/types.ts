@@ -55,6 +55,7 @@ export interface MatchDto {
   id: string;
   stage: Stage;
   groupId: string | null;
+  round: number | null;
   slot: number | null;
   teamA: TeamRefDto | null;
   teamB: TeamRefDto | null;

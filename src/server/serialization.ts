@@ -48,6 +48,7 @@ interface LeanMatch {
   _id: ObjectIdLike;
   stage: Stage;
   groupId?: ObjectIdLike | null;
+  round?: number | null;
   slot?: number | null;
   teamAId?: ObjectIdLike | null;
   teamBId?: ObjectIdLike | null;
@@ -106,6 +107,7 @@ export function toMatchDto(
     id: toId(match._id),
     stage: match.stage,
     groupId: toOptionalId(match.groupId),
+    round: match.round ?? null,
     slot: match.slot ?? null,
     teamA: resolve(match.teamAId),
     teamB: resolve(match.teamBId),

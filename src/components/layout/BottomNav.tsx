@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { Home, Trophy } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { ROUTES } from '@/lib/constants';
@@ -16,10 +16,19 @@ const ITEMS = [
  * polegar; a partir de `lg` sobe para o cabeçalho.
  */
 export function BottomNav({ variant }: { variant: 'bar' | 'inline' }) {
-  const pathname = usePathname();
+  const [hash, setHash] = useState('');
+
+  useEffect(() => {
+    const updateHash = () => setHash(window.location.hash);
+    updateHash();
+    window.addEventListener('hashchange', updateHash);
+    return () => window.removeEventListener('hashchange', updateHash);
+  }, []);
 
   const isActive = (href: string) =>
-    href === ROUTES.home ? pathname === href : pathname.startsWith(href);
+    href === ROUTES.home
+      ? !hash || hash === '#inicio'
+      : hash === '#fase-de-grupos' || hash === '#mata-mata';
 
   if (variant === 'inline') {
     return (
@@ -29,7 +38,7 @@ export function BottomNav({ variant }: { variant: 'bar' | 'inline' }) {
             <li key={item.href}>
               <Link
                 href={item.href}
-                aria-current={isActive(item.href) ? 'page' : undefined}
+                aria-current={isActive(item.href) ? 'location' : undefined}
                 className={cn(
                   'relative flex h-full items-center font-display text-base uppercase tracking-[0.13em] transition-colors after:absolute after:inset-x-0 after:bottom-0 after:h-[2px] after:origin-left after:bg-primary after:transition-transform',
                   isActive(item.href)
@@ -60,13 +69,13 @@ export function BottomNav({ variant }: { variant: 'bar' | 'inline' }) {
             <li key={item.href} className="flex-1">
               <Link
                 href={item.href}
-                aria-current={active ? 'page' : undefined}
+                aria-current={active ? 'location' : undefined}
                 className={cn(
                   'flex h-16 flex-col items-center justify-center gap-1 px-1 transition-colors',
                   active ? 'text-primary' : 'text-muted-foreground',
                 )}
               >
-                <Icon className={cn('h-5 w-5', active && 'drop-shadow-[0_0_6px_rgba(22,201,86,0.6)]')} />
+                <Icon className="h-5 w-5" />
                 <span className="font-display text-[11px] uppercase tracking-wider leading-none">
                   {item.label}
                 </span>

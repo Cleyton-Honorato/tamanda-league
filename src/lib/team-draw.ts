@@ -38,8 +38,8 @@ function score(teams: DrawAthlete[][]) {
 /** Embaralha dentro das faixas de nível, distribui em serpentina e melhora o equilíbrio por trocas. */
 export function drawBalancedTeams(athletes: DrawAthlete[], seed: string): DrawResult {
   if (athletes.length < 4) throw new Error('São necessários ao menos quatro atletas.');
-  if (athletes.some((athlete) => !Number.isInteger(athlete.level) || athlete.level < 1 || athlete.level > 5)) {
-    throw new Error('Todos os atletas precisam ter nível de 1 a 5.');
+  if (athletes.some((athlete) => !Number.isInteger(athlete.level * 2) || athlete.level < 0.5 || athlete.level > 5)) {
+    throw new Error('Todos os atletas precisam ter nível de 0,5 a 5, em intervalos de meia estrela.');
   }
 
   const random = seededRandom(seed);

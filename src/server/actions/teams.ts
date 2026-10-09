@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { adminAction } from '@/server/actions/_helpers';
 import { teamSchema } from '@/features/admin/schemas';
-import { createTeam, deleteTeam, updateTeam } from '@/server/services/teams';
+import { createTeam, deleteTeam, transferAthlete, updateTeam } from '@/server/services/teams';
 import { PUBLIC_MATCH_PATHS } from '@/lib/constants';
 
 const REVALIDATE = [...PUBLIC_MATCH_PATHS, '/admin/times', '/admin/atletas', '/admin'];
@@ -32,5 +32,18 @@ export async function deleteTeamAction(input: unknown) {
     input,
     revalidate: REVALIDATE,
     handler: async (data) => deleteTeam(data.id),
+  });
+}
+
+export async function transferAthleteAction(input: unknown) {
+  return adminAction({
+    schema: z.object({
+      athleteId: z.string().regex(/^[0-9a-f]{24}$/i),
+      destinationTeamId: z.string().regex(/^[0-9a-f]{24}$/i).nullable(),
+      swapAthleteId: z.string().regex(/^[0-9a-f]{24}$/i).nullable(),
+    }),
+    input,
+    revalidate: REVALIDATE,
+    handler: (data) => transferAthlete(data.athleteId, data.destinationTeamId, data.swapAthleteId),
   });
 }

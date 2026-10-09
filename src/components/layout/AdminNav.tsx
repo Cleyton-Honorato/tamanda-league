@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Layers,
   Trophy,
+  UserCog,
   Users,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -20,6 +21,7 @@ const ITEMS = [
   { href: '/admin/jogos', label: 'Jogos', icon: CalendarDays },
   { href: '/admin/chaveamento', label: 'Mata-mata', icon: Trophy },
   { href: '/admin/galeria', label: 'Galeria', icon: Images },
+  { href: '/admin/administradores', label: 'Administradores', icon: UserCog },
 ];
 
 export function AdminNav() {

@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Field';
 import { Modal } from '@/components/ui/Modal';
@@ -37,6 +39,7 @@ export function ScoreModal({
     >
       {match && (
         <form onSubmit={onSubmitForm(handleSubmit)} className="flex flex-col gap-4">
+          {match.teamA && match.teamB && <Link href={`/admin/jogos/${match.id}/mesa`} className="rounded-lg border border-primary/30 p-3 text-center font-display uppercase text-primary">Abrir mesa · cronômetro e pontos por jogador</Link>}
           <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-3">
             <Input
               id="scoreA"

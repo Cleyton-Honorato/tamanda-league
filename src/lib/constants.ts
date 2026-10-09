@@ -4,17 +4,17 @@ export const COOKIES = {
 
 export const ROUTES = {
   home: '/',
-  campeonato: '/campeonato',
-  jogos: '/campeonato',
-  classificacao: '/campeonato',
-  chaveamento: '/campeonato?fase=mata-mata',
-  galeria: '/galeria',
+  campeonato: '/#fase-de-grupos',
+  jogos: '/#fase-de-grupos',
+  classificacao: '/#fase-de-grupos',
+  chaveamento: '/#mata-mata',
+  galeria: '/#galeria',
   admin: '/admin',
   adminLogin: '/admin/login',
 } as const;
 
 /** Páginas públicas que mudam quando o admin mexe em jogos/times. */
-export const PUBLIC_MATCH_PATHS = ['/', '/campeonato'] as const;
+export const PUBLIC_MATCH_PATHS = ['/'] as const;
 
 export const CLOUDINARY_FOLDER = 'tamanda-league';
 
